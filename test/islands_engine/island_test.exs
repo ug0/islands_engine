@@ -25,4 +25,19 @@ defmodule IslandsEngine.IslandTest do
     assert {:hit, updated_island} = Island.guess(island, hit_coordinate)
     assert MapSet.member?(updated_island.hit_coordinates, hit_coordinate)
   end
+
+  test "judge if an island is forested" do
+    {:ok, coordinate} = Coordinate.new(1, 1)
+    {:ok, island} = Island.new(:square, coordinate)
+    coordinates = for r <- 1..2, c <- 1..2 do
+      {:ok, coordinate} = Coordinate.new(r, c)
+      coordinate
+    end
+    updated_island = Enum.reduce(coordinates, island, fn coordinate, updated_island ->
+      refute Island.forested?(updated_island)
+      {:hit, updated_island} = Island.guess(updated_island, coordinate)
+      updated_island
+    end)
+    assert Island.forested?(updated_island)
+  end
 end
