@@ -14,6 +14,8 @@ defmodule IslandsEngine.Island do
     end
   end
 
+  def types, do: [:atoll, :dot, :l_shape, :s_shape, :square]
+
   def guess(%Island{} = island, %Coordinate{} = coordinate) do
     case MapSet.member?(island.coordinates, coordinate) do
       true ->
