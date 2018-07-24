@@ -52,6 +52,6 @@ defmodule IslandsEngine.BoardTest do
     assert {:hit, :square, :no_win, board} = Board.guess(board, guess_coordinate)
 
     {:ok, guess_coordinate} = Coordinate.new(5, 5)
-    assert {:hit, :dot, :win, board} = Board.guess(board, guess_coordinate)
+    assert {:hit, :dot, :win, _board} = Board.guess(board, guess_coordinate)
   end
 end
