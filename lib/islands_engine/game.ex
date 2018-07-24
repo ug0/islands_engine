@@ -29,9 +29,8 @@ defmodule IslandsEngine.Game do
   def via_tuple(name), do: {:via, Registry, {Registry.Game, name}}
 
   def init(name) do
-    player1 = %{name: name, board: Board.new(), guesses: Guesses.new()}
-    player2 = %{name: nil, board: Board.new(), guesses: Guesses.new()}
-    {:ok, %{player1: player1, player2: player2, rules: Rules.new()}, @timeout}
+    send(self(), {:set_state, name})
+    {:ok, fresh_state(name)}
   end
 
   def handle_call({:add_player, name}, _from, state) do
@@ -97,6 +96,22 @@ defmodule IslandsEngine.Game do
     {:stop, {:shutdown, :timeout}, state}
   end
 
+  def handle_info({:set_state, name}, _state) do
+    state =
+      case :ets.lookup(:game_state, name) do
+        [] -> fresh_state(name)
+        [{_key, state}] -> state
+      end
+    :ets.insert(:game_state, {name, state})
+    {:noreply, state, @timeout}
+  end
+
+  def terminate({:shutdown, :timeout}, state) do
+    :ets.delete(:game_state, state.player1.name)
+    :ok
+  end
+  def terminate(_reason, _state), do: :ok
+
   defp player_board(state, player), do: Map.get(state, player).board
   defp opponent(:player1), do: :player2
   defp opponent(:player2), do: :player1
@@ -115,7 +130,17 @@ defmodule IslandsEngine.Game do
 
   defp update_rules(state, rules), do: %{state | rules: rules}
 
-  defp reply_success(state, reply), do: {:reply, reply, state, @timeout}
+  defp fresh_state(name) do
+    player1 = %{name: name, board: Board.new(), guesses: Guesses.new()}
+    player2 = %{name: nil, board: Board.new(), guesses: Guesses.new()}
+    %{player1: player1, player2: player2, rules: Rules.new()}
+  end
+
+  defp reply_success(state, reply) do
+    :ets.insert(:game_state, {state.player1.name, state})
+    {:reply, reply, state, @timeout}
+  end
+
   defp reply_error(state), do: {:reply, :error, state, @timeout}
   defp reply_error(state, reason), do: {:reply, {:error, reason}, state, @timeout}
 end
